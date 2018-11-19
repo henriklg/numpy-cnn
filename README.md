@@ -10,7 +10,8 @@ Choose tasks
 ```
 
 ### Part 2:
-```
 * More complex dataset
 * Implement SVM
+```
+If time before deadline
 ```
