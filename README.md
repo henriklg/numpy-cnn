@@ -1,5 +1,5 @@
 # Project 3 - FYS-STK4155
-Deadline December 14.
+Betina, Ingrid, Polina, Mona and Henrik's venture into Convolutional Neural Networks. Deadline December 14.
 
 Part 1 (use MNIST dataset):
 ```
