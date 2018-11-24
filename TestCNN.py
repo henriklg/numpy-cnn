@@ -1,36 +1,46 @@
 import unittest
-from CNN import convolution
+import numpy as np
+from CNN import convolution2D, maxpool2D
+
+# py -m unittest TestCNN.py
 
 class TestCNN(unittest.TestCase):
     '''
     Basic test class for CNN.py
     '''
 
-    def test_convolution(self):
+    def test_convolution2D(self):
         '''
         Test the convolution function of CNN
         '''
-        image = [[1, 1, 1, 0, 0]
-                [0, 1, 1, 1, 0]
-                [0, 0, 1, 1, 1]
-                [0, 0, 1, 1, 0]
-                [0, 1, 1, 0, 0]]
-        filter = [[1, 0, 1]
-                [0, 1, 0]
-                [1, 0, 1]]
-        expected = [[4, 3, 4]
-                    [2, 4, 3]
-                    [2, 3, 9]] #234
+        image = np.array([[1, 1, 1, 0, 0],
+                [0, 1, 1, 1, 0],
+                [0, 0, 1, 1, 1],
+                [0, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0]])
+        filter = np.array([[1, 0, 1],
+                [0, 1, 0],
+                [1, 0, 1]])
+        expected = np.array([[4, 3, 4],
+                    [2, 4, 3],
+                    [2, 3, 4]]) #234
 
         bias = 0
         stride = 1
 
-        image_after_convolution = convolution(image, filter, bias, stride)
-        print (image_after_convolution)
-        print ("\n")
-        print (expected)
+        image_after_convolution = convolution2D(image, filter, bias, stride)
         self.assertListEqual(image_after_convolution.tolist(),expected.tolist())
 
+
+    def test_maxpool2D(self):
+        image = np.array([[1, 0, 2, 3],
+                [4, 6, 6, 8],
+                [3, 1, 1, 0],
+                [1, 2, 2, 4]])
+        expected = np.array([[6, 8],
+                            [3,4]])
+        image_reduced = maxpool2D(image)
+        self.assertListEqual(expected.tolist(), image_reduced.tolist())
 
 
     if __name__ == '__main__':
