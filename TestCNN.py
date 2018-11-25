@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from CNN import convolution2D, maxpool2D
+from CNN_forward import convolution2D, maxpool2D
 
 # py -m unittest TestCNN.py
 
