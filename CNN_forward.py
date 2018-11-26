@@ -56,21 +56,21 @@ def convolution2D(image, filter, bias, stride=1):
 
     Return: 2D array of convolved image
     '''
-    f, _ = filter.shape   # get the filter dimensions
-    in_dim, _ = image.shape        # image dimensions
+    h_filter, _ = filter.shape  # get the filter dimensions
+    in_dim, _ = image.shape     # image dimensions
 
-    out_dim = int(((in_dim - f)/stride)+1)    # output dimensions
-    out = np.zeros((out_dim,out_dim)) # create the matrix to hold the values of the convolution operation
+    out_dim = int(((in_dim - h_filter)/stride)+1)    # output dimensions
+    out = np.zeros((out_dim, out_dim)) # create the matrix to hold the values of the convolution operation
 
     # convolve each filter over the image
     curr_y = out_y = 0
     # move filter vertically across the image
-    while curr_y + f <= in_dim:
+    while curr_y + h_filter <= in_dim:
         curr_x = out_x = 0
         # move filter horizontally across the image
-        while curr_x + f <= in_dim:
+        while curr_x + h_filter <= in_dim:
             # perform the convolution operation and add the bias
-            out[out_y, out_x] = np.sum(filter * image[curr_y:curr_y+f, curr_x:curr_x+f]) + bias
+            out[out_y, out_x] = np.sum(filter * image[curr_y:curr_y+h_filter, curr_x:curr_x+h_filter]) + bias
             curr_x += stride
             out_x += 1
         curr_y += stride
@@ -88,24 +88,24 @@ def maxpool3D(image, kernel_size=2, step_size=2):
 
     Return: downsampled images - 3D np.array
     '''
-    n_c, h_prev, w_prev = image.shape
+    n_channels, h_in, w_in = image.shape
 
     # calculate output dimensions after the maxpooling operation.
-    h = int((h_prev - kernel_size)/step_size)+1
-    w = int((w_prev - kernel_size)/step_size)+1
+    h_out = int((h_prev - kernel_size)/step_size)+1
+    w_out = int((w_prev - kernel_size)/step_size)+1
 
     # create a matrix to hold the values of the maxpooling operation.
-    downsampled = np.zeros((n_c,h,w))
+    downsampled = np.zeros((n_channels,h_out,w_out))
     # slide the window over every part of the image using stride step_size. Take the maximum value at each step.
-    for i in range(n_c):
+    for channel in range(n_channels):
         curr_y = out_y = 0
         # slide the max pooling window vertically across the image
-        while curr_y + kernel_size <= h_prev:
+        while curr_y + kernel_size <= h_in:
             curr_x = out_x = 0
             # slide the max pooling window horizontally across the image
-            while curr_x + kernel_size <= w_prev:
+            while curr_x + kernel_size <= w_in:
                 # choose the maximum value within the window at each step and store it to the output matrix
-                downsampled[i, out_y, out_x] = np.max(image[i, curr_y:curr_y+kernel_size, curr_x:curr_x+kernel_size])
+                downsampled[channel, out_y, out_x] = np.max(image[channel, curr_y:curr_y+kernel_size, curr_x:curr_x+kernel_size])
                 curr_x += step_size
                 out_x += 1
             curr_y += step_size
@@ -151,6 +151,9 @@ def maxpool2D(image, kernel_size=2, step_size=2):
 def softmax(raw_preds):
     '''
     pass raw predictions through softmax activation function
+
+    Param1: raw_preds - np.array
+    Return: np.array
     '''
     out = np.exp(raw_preds) # exponentiate vector of raw predictions
     return out/np.sum(out) # divide the exponentiated vector by its sum. All values in the output sum to 1.

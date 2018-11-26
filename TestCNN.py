@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from CNN_forward import convolution2D, maxpool2D
+from CNN_forward import convolution2D, maxpool2D, softmax
 
 # py -m unittest TestCNN.py
 
@@ -23,8 +23,7 @@ class TestCNN(unittest.TestCase):
                 [1, 0, 1]])
         expected = np.array([[4, 3, 4],
                     [2, 4, 3],
-                    [2, 3, 4]]) #234
-
+                    [2, 3, 4]])
         bias = 0
         stride = 1
 
@@ -41,6 +40,13 @@ class TestCNN(unittest.TestCase):
                             [3,4]])
         image_reduced = maxpool2D(image)
         self.assertListEqual(expected.tolist(), image_reduced.tolist())
+
+
+    def test_softmax(self):
+        predictions = np.zeros(4)
+        result = softmax(predictions)
+        expected = np.array([0.25, 0.25, 0.25, 0.25])
+        self.assertListEqual(expected.tolist(), result.tolist())
 
 
     if __name__ == '__main__':
