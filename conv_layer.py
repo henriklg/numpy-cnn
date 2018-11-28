@@ -13,19 +13,35 @@ class ConvLayer():
 
         # Initialize filters
         self.filters = self.initialize_filter(f_size=[n_filters, kernel_size[0], kernel_size[1]])
-        self.biases = np.randomn(n_filters)
+        self.n_filters = n_filters
+        self.kernel_size = kernel_size[0]
+        self.biases = np.random.randn(n_filters)
 
-        self.outputs = []
+        self.out = None
+        self.z = []
         self.activation = activation
 
-    def forward_propagation(self, image):
-        self.outputs = []
-        for filter_nr, filter in enumerate(self.filters):
-            self.outputs.append(self.convolution2D(image, filter, self.biases[filter_nr]))
+    def forward_propagation(self, images):
+        self.a_in = images
+        n_images, img_size, _ = np.shape(images)
 
-        return self.outputs
+        stride = 1
+        out_img_size = int((img_size-self.kernel_size)/stride + 1)
+        self.out = np.zeros(shape=[n_images*self.n_filters, out_img_size, out_img_size])
+        self.z = []
 
-    def convolution2D(self, image, filter, bias, stride=1):
+        out_nr = 0
+
+        for img_nr in range(n_images):
+            image = self.a_in[img_nr, :, :]
+            for filter_nr, filter in enumerate(self.filters):
+                self.z.append(self.convolution2D(image, filter, self.biases[filter_nr]))
+                self.out[out_nr, :, :] = self.convolution2D(image, filter, self.biases[filter_nr])
+                img_nr += 1
+
+        return self.out
+
+    def convolution2D(self, image, filter, bias, stride=1, padding=0):
         '''
         Convolution of 'filter' over 'image' using stride length 'stride'
         Param1: image, given as 2D np.array
@@ -34,7 +50,11 @@ class ConvLayer():
         Param4: stride length, given as integer
         Return: 2D array of convolved image
         '''
+
         h_filter, _ = filter.shape  # get the filter dimensions
+
+        if padding > 0:
+            image = np.pad(image, pad_width=padding, mode='constant')
         in_dim, _ = image.shape  # image dimensions (NB image must be [NxN])
 
         out_dim = int(((in_dim - h_filter) / stride) + 1)  # output dimensions
@@ -56,11 +76,6 @@ class ConvLayer():
             out_y += 1
         return out
 
-
-    def back_propagation(self):
-        pass
-
-
     def softmax(raw_preds):
         '''
         pass raw predictions through softmax activation function
@@ -74,9 +89,6 @@ class ConvLayer():
         stddev = scale / np.sqrt(np.prod(f_size))
         return np.random.normal(loc=0, scale=stddev, size=f_size)
 
-    def forward_propagation(self, a_in):
-        for filter in
-
     def back_propagation(self, error):
         """
         layer L
@@ -85,16 +97,32 @@ class ConvLayer():
         d_F = derivative with regards to filter
         d_X = error in input, input for backpropagation in layer L-1
         """
-        # last filter
-        d_F = convolve(self.inputs[-1], error)
+        error_out = np.zeros(shape=np.shape(self.a_in))
+        n_images, _, _ = np.shape(self.a_in)
+        # Backpropagate through activation function part
+        for img_nr in range(n_images):
+            image = self.a_in[img_nr, :, :]
+            for filter_nr in range(len(self.filters)):
+                prop_error = error[filter_nr, :, :]*self.d_activation(self.z[filter_nr])
+                d_F = self.convolution2D(image, np.rot90(prop_error, 2), bias=0)
 
-        for filter_nr in reversed(range(len(self.filters)-1)):
-            # Update weights
-            self.filters[filter_nr] -= d_F
-            d_F = convolve(self.inputs[filter_nr])
+                # Update weights
+                self.filters[filter_nr] -= d_F
 
-        # d_F error input to next layer
-        return d_F
+                error_out[img_nr, :, :] += self.convolution2D(prop_error, np.rot90(self.filters[filter_nr], 2), bias=0, padding=1)
+
+        return error_out
+
+    def activation(self, a):
+        a[a <= 0] = 0
+        return a
+
+    def d_activation(self, a):
+        # Return ReLU derivative
+        a[a <= 0] = 0
+        a[a > 0] = 1
+        return a
+
 
 def convolve(image, filter):
     return fftconvolve(image, filter, mode='same')
@@ -110,18 +138,87 @@ def initialize_filter(f_size, scale=1.0):
     return np.random.normal(loc=0, scale=stddev, size=f_size)
 
 class MaxPoolLayer():
-    def __init__(self, a_in, stride):
-        self.a_in = a_in
+    def __init__(self, stride):
+        self.a_in = None
         self.stride = stride
         self.a_out = None
 
     def feed_forward(self, a_in):
         self.a_in = a_in
-        self.a_out = block_reduce(self.a_in, (self.stride, self.stride), np.max)
+        n_images, img_size, _ = np.shape(self.a_in)
+        self.a_out = np.zeros(shape=[n_images, int(img_size/self.stride), int(img_size/self.stride)])
+        for img_nr in range(n_images):
+            self.a_out[img_nr, :, :] = block_reduce(self.a_in[img_nr, :, :], (self.stride, self.stride), np.max)
         return self.a_out
 
-    def back_propagation(self):
-        pass
+    def back_propagation(self, d_error):
+        # Pass error to pixel with largest value
+        e_i = 0
+        e_j = 0
+        i = 0
+        j = 0
 
+        d_p = np.zeros(self.a_in.shape)
+        for img_nr in range(np.shape(self.a_in)[0]):
+            while i < np.shape(d_p)[1]:
+                e_j = 0
+                j = 0
+
+                while j < np.shape(d_p)[2]:
+                    a = self.a_in[img_nr, i:i+self.stride, j:j+self.stride]
+                    x, y  = np.unravel_index(a.argmax(), [self.stride, self.stride])
+
+                    d_p[img_nr, x+i, y+j] = d_error[img_nr, e_i, e_j]
+                    e_j += 1
+                    j += self.stride
+
+                e_i += 1
+                i += self.stride
+
+        return d_p
+
+class FullyConnectedLayer():
+    def __init__(self, n_categories, activation='softmax'):
+        self.a_in = None
+        self.S = None
+        self.weights = None
+        self.bias = np.random.randn(n_categories)
+        self.n_categories = n_categories
+        self.activation = activation
+        self.out = None
+
+    def feed_forward(self, a_in):
+        # Vectorize step
+        self.a_in = a_in
+        self.S = np.ravel(a_in)
+
+        if self.weights is None:
+            # initialize weights
+            self.weights = np.random.randn(self.n_categories, len(self.S))
+
+        self.out = self.activation_function(np.matmul(self.weights, self.S) + self.bias)
+
+        return self.out
+
+    def activation_function(self, a):
+        if self.activation == 'softmax':
+            return np.exp(a) / (np.exp(a).sum())
+
+    def back_propagation(self, error):
+        # Error w.r.t weights
+        w_d = np.matmul(error, self.S.T) #*self.d_activation(self.out) # If categorical loss ????
+        b_d = error*self.out #????????????????
+
+        # Calculate error in input
+        d_S = np.matmul(self.weights.T, error)#*self.d_activation
+
+        # Reshape
+        d_a_in = d_S.reshape(np.shape(self.a_in))
+
+        # Update weights & bias
+        self.weights += w_d
+        self.bias += b_d
+
+        return d_a_in
 
 
