@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.signal import fftconvolve
 from skimage.measure import block_reduce
+from math import ceil
 
 """
 TODO: More numpyfication
 """
 
 class ConvLayer():
-
     def __init__(self, n_filters, kernel_size, activation='linear', input_shape=(28, 28, 1), padding='same'):
         self.a_in = None
 
@@ -15,7 +15,7 @@ class ConvLayer():
         self.filters = self.initialize_filter(f_size=[n_filters, kernel_size[0], kernel_size[1]])
         self.n_filters = n_filters
         self.kernel_size = kernel_size[0]
-        self.biases = np.random.randn(n_filters)
+        self.biases = np.zeros(n_filters)
 
         self.out = None
         self.z = []
@@ -37,7 +37,7 @@ class ConvLayer():
             for filter_nr, filter in enumerate(self.filters):
                 self.z.append(self.convolution2D(image, filter, self.biases[filter_nr]))
                 self.out[out_nr, :, :] = self.convolution2D(image, filter, self.biases[filter_nr])
-                img_nr += 1
+                out_nr += 1
 
         return self.out
 
@@ -76,7 +76,7 @@ class ConvLayer():
             out_y += 1
         return out
 
-    def softmax(raw_preds):
+    def softmax(self, raw_preds):
         '''
         pass raw predictions through softmax activation function
         Param1: raw_preds - np.array
@@ -107,7 +107,8 @@ class ConvLayer():
                 d_F = self.convolution2D(image, np.rot90(prop_error, 2), bias=0)
 
                 # Update weights
-                self.filters[filter_nr] -= d_F
+                self.filters[filter_nr] += d_F
+                #self.biases[filter_nr] += np.sum()
 
                 error_out[img_nr, :, :] += self.convolution2D(prop_error, np.rot90(self.filters[filter_nr], 2), bias=0, padding=1)
 
@@ -146,7 +147,7 @@ class MaxPoolLayer():
     def feed_forward(self, a_in):
         self.a_in = a_in
         n_images, img_size, _ = np.shape(self.a_in)
-        self.a_out = np.zeros(shape=[n_images, int(img_size/self.stride), int(img_size/self.stride)])
+        self.a_out = np.zeros(shape=[n_images, int(ceil(img_size/self.stride)), int(ceil(img_size/self.stride))])
         for img_nr in range(n_images):
             self.a_out[img_nr, :, :] = block_reduce(self.a_in[img_nr, :, :], (self.stride, self.stride), np.max)
         return self.a_out
@@ -178,19 +179,27 @@ class MaxPoolLayer():
         return d_p
 
 class FullyConnectedLayer():
-    def __init__(self, n_categories, activation='softmax'):
+    def __init__(self, n_categories, n_images, activation='softmax'):
+        # Input
         self.a_in = None
+
+        # Vectorized
         self.S = None
+
+        # Weights
         self.weights = None
         self.bias = np.random.randn(n_categories)
         self.n_categories = n_categories
+        self.n_images = n_images
         self.activation = activation
         self.out = None
 
     def feed_forward(self, a_in):
         # Vectorize step
-        self.a_in = a_in
-        self.S = np.ravel(a_in)
+        lengde, size, size = np.shape(self.a_in)
+        per_image = int(lengde/self.n_images)
+
+        S1 = np.reshape(a_in, newshape=[per_image, size, size])
 
         if self.weights is None:
             # initialize weights
