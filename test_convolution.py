@@ -40,6 +40,11 @@ class Test(unittest.TestCase):
         M_out = ML.feed_forward(C_out)
         print(np.shape(M_out))
 
+    def test_reshape(self):
+        a = np.ones(shape=[8, 7, 7])
+        F = FullyConnectedLayer(2, 2)
+        out = F.new_shape(a)
+        print(np.shape(out))
     # def test_convolve(self):
     #     image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     #     filter = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])

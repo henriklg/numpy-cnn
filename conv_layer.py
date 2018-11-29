@@ -178,7 +178,7 @@ class MaxPoolLayer():
 
         return d_p
 
-class FullyConnectedLayer():
+class FullyConnectedLayer:
     def __init__(self, n_categories, n_images, activation='softmax'):
         # Input
         self.a_in = None
@@ -194,18 +194,36 @@ class FullyConnectedLayer():
         self.activation = activation
         self.out = None
 
+    def new_shape(self, a):
+        # Vectorize step
+        lengde, size, size = np.shape(a)
+        per_image = int(lengde / self.n_images)
+
+        reshaped = np.zeros(shape=[self.n_images, per_image*size*size])
+
+        count = 0
+
+        for img in range(self.n_images):
+            vec = np.zeros(per_image*size*size)
+            pos = 0
+            while count % per_image != 0:
+                vec[pos:pos + size] = (np.ravel(a[count].T))
+                count += 1
+                pos += size
+
+            reshaped[img, :] = vec
+        return reshaped
+
     def feed_forward(self, a_in):
         # Vectorize step
-        lengde, size, size = np.shape(self.a_in)
-        per_image = int(lengde/self.n_images)
-
-        S1 = np.reshape(a_in, newshape=[per_image, size, size])
+        self.a_in = a_in
+        self.S = self.new_shape(a_in)
 
         if self.weights is None:
             # initialize weights
-            self.weights = np.random.randn(self.n_categories, len(self.S))
+            self.weights = np.random.randn(self.n_categories, np.shape(self.S)[1])
 
-        self.out = self.activation_function(np.matmul(self.weights, self.S) + self.bias)
+        self.out = self.activation_function(np.matmul(self.S, self.weights) + self.bias)
 
         return self.out
 
