@@ -101,7 +101,6 @@ class Convolution:
             for w in range(n_W):
                 dX[h:h+f, w:w+f] += W * dH(h,w)
                 dW += X[h:h+f, w:w+f] * dH(h,w)
-
         return dX, dW
 
 
