@@ -23,13 +23,13 @@ class Test(unittest.TestCase):
         input = digits.images[0:2]
 
         out = ML.feed_forward(input)
-        print(out[0])
-        print(input[0])
+        #print(out[0])
+        #print(input[0])
 
         error = np.random.randn(2, 4, 4)
         back = ML.back_propagation(error)
 
-        print(np.shape(back))
+        #print(np.shape(back))
 
     def test_forward(self):
         input = digits.images[0:2]
@@ -38,13 +38,35 @@ class Test(unittest.TestCase):
 
         C_out = CL.forward_propagation(images=input)
         M_out = ML.feed_forward(C_out)
-        print(np.shape(M_out))
+        #print(np.shape(M_out))
 
     def test_reshape(self):
         a = np.ones(shape=[8, 7, 7])
         F = FullyConnectedLayer(2, 2)
         out = F.new_shape(a)
-        print(np.shape(out))
+        #print(np.shape(out))
+        _ = F.feed_forward(a)
+        out2 = F.reshape_back(out)
+        #print(np.shape(out))
+
+    def test_forward_propagation(self):
+        input = digits.images[0:2]
+
+        layer1 = ConvLayer(n_filters=2, kernel_size=[2, 2], activation='ReLU', input_shape=(8, 8, 1))
+        layer2 = MaxPoolLayer(stride=2)
+        layer3 = FullyConnectedLayer(n_categories=10, n_images=2)
+
+        out1 = layer1.forward_propagation(input)
+        out2 = layer2.feed_forward(out1)
+        print('in: ', out2)
+        prob = layer3.feed_forward(out2)
+        print(prob)
+        self.assertEqual(10, np.shape(prob))
+
+
+
+
+
     # def test_convolve(self):
     #     image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     #     filter = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
