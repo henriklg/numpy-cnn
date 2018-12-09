@@ -6,10 +6,14 @@ from sklearn import datasets
 import numba
 
 """
-TODO: More numpyfication
+    Classes for different types of layer for a CNN
 """
 
+
 class ConvLayer():
+    """
+    Convolutional layer class
+    """
     def __init__(self, n_filters, kernel_size, eta = 0.0001, activation='linear', input_shape=(28, 28, 1), padding='same'):
         self.a_in = None
         np.random.seed(100)
@@ -29,6 +33,11 @@ class ConvLayer():
 
     @numba.jit
     def feed_forward(self, images):
+        """
+        Feed forward for convolution layer
+        :param images: input matrices/images
+        :return: input convolved with the filters in convolution layer
+        """
         self.a_in = images
         n_images, img_size, _ = np.shape(images)
 
@@ -50,6 +59,9 @@ class ConvLayer():
         return self.out
 
     def activation_func(self, a):
+        """
+        ReLU activation function
+        """
         a[a <= 0] = 0
         return a
 
@@ -99,13 +111,16 @@ class ConvLayer():
         return out / np.sum(out)  # divide the exponentiated vector by its sum. All values in the output sum to 1.
 
     def initialize_filter(self, f_size, scale=1.0):
+        """
+        Initialize filters with random numbers
+        """
         stddev = scale / np.sqrt(np.prod(f_size))
         return np.random.normal(loc=0, scale=stddev, size=f_size)
 
     @numba.jit
     def back_propagation(self, error):
         """
-        layer L
+        Backpropagation in convolution layer
         :param error: error from layer L+1
         F = filter
         d_F = derivative with regards to filter
@@ -113,6 +128,7 @@ class ConvLayer():
         """
         error_out = np.zeros(shape=np.shape(self.a_in))
         n_images, _, _ = np.shape(self.a_in)
+
         # Backpropagate through activation function part
         for img_nr in range(n_images):
             image = self.a_in[img_nr, :, :]
@@ -125,7 +141,6 @@ class ConvLayer():
                 self.biases[filter_nr] += self.eta*np.sum(prop_error)/np.shape(self.a_in)[0]
 
                 error_out[img_nr, :, :] += self.convolution2D(prop_error, np.rot90(self.filters[filter_nr], 2), bias=0, padding=1)
-
         return error_out
 
     def d_activation(self, a):
@@ -134,21 +149,10 @@ class ConvLayer():
         a[a > 0] = 1
         return a
 
-
-def convolve(image, filter):
-    return fftconvolve(image, filter, mode='same')
-
-def max_pooling(image, stride=2):
-    return block_reduce(image, (stride, stride), np.max)
-
-def average_pooling(image, stride=2):
-    return block_reduce(image, (stride, stride), np.average())
-
-def initialize_filter(f_size, scale=1.0):
-    stddev = scale / np.sqrt(np.prod(f_size))
-    return np.random.normal(loc=0, scale=stddev, size=f_size)
-
 class MaxPoolLayer():
+    """
+    Max pool layer
+    """
     def __init__(self, stride):
         self.a_in = None
         self.stride = stride
@@ -156,6 +160,9 @@ class MaxPoolLayer():
 
     @numba.jit
     def feed_forward(self, a_in):
+        """
+        Max pooling of input a_in
+        """
         self.a_in = a_in
         n_images, img_size, _ = np.shape(self.a_in)
         self.a_out = np.zeros(shape=[n_images, int(ceil(img_size/self.stride)), int(ceil(img_size/self.stride))])
@@ -166,6 +173,11 @@ class MaxPoolLayer():
 
     @numba.jit
     def back_propagation(self, d_error):
+        """
+        Backpropagation on max pool layer
+        :param d_error: error from subsequent layer
+        :return: error of input to max pool layer
+        """
         # Pass error to pixel with largest value
         e_i = 0
         e_j = 0
@@ -191,6 +203,9 @@ class MaxPoolLayer():
         return d_p
 
 class FullyConnectedLayer:
+    """
+    Fully connected layer class
+    """
     def __init__(self, n_categories, n_images, eta=0.001, activation='softmax'):
         # Input
         self.a_in = None
@@ -210,9 +225,15 @@ class FullyConnectedLayer:
         self.eta = eta
 
     def update_images(self, n_images):
+        """
+        Change nr of outputs
+        """
         self.n_images = n_images
 
     def new_shape(self, a):
+        """
+        Vectorize input to FC layer
+        """
         # Vectorize step
         lengde, size, size = np.shape(a)
         per_image = int(lengde / self.n_images)
@@ -234,6 +255,9 @@ class FullyConnectedLayer:
         return reshaped
 
     def reshape_back(self, a):
+        """
+        Undo vectorization
+        """
         out = np.zeros(np.shape(self.a_in))
         length, size, size = np.shape(self.a_in)
 
@@ -248,6 +272,9 @@ class FullyConnectedLayer:
         return out
 
     def feed_forward(self, a_in):
+        """
+        Feed forward step in FC layer
+        """
         # Vectorize step
         self.a_in = a_in
         self.S = self.new_shape(a_in)
@@ -257,14 +284,19 @@ class FullyConnectedLayer:
             self.weights = np.random.randn(self.n_categories, np.shape(self.S)[1])
 
         self.out = self.activation_function(np.matmul(self.S, self.weights.T) + self.bias)
-
         return self.out
 
     def activation_function(self, a):
+
         if self.activation == 'softmax':
             return np.exp(a) / (np.exp(a).sum(axis=1))[:, None]
 
     def back_propagation(self, error):
+        """
+        Backpropagation of Fully Connected layer
+        :param error: Error in final output w.r.t softmax
+        :return: error in input to FC layer
+        """
         # Error w.r.t weights
         w_d = np.matmul(error.T, self.S)
         b_d = np.sum(error)/len(error)
@@ -282,31 +314,5 @@ class FullyConnectedLayer:
 
         return d_a_in
 
-
-if __name__ == '__main__':
-    digits = datasets.load_digits()
-    images_and_labels = list(zip(digits.images, digits.target))
-    np.random.seed(100)
-
-    input = digits.images[0:2]
-
-    layer1 = ConvLayer(n_filters=2, kernel_size=[2, 2], activation='ReLU', input_shape=(8, 8, 1))
-    layer2 = MaxPoolLayer(stride=2)
-    layer3 = FullyConnectedLayer(n_categories=10, n_images=2)
-
-    layers = [layer1, layer2, layer3]
-    for layer in layers:
-        out = layer.feed_forward(input)
-        input = out
-
-    target = np.zeros(shape=np.shape(out))
-    target[0, 0] = 1
-    target[1, 1] = 1
-
-    error = out - target
-
-    for layer in reversed(layers):
-        E = layer.back_propagation(error)
-        error = E
 
 
