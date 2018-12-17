@@ -3,9 +3,9 @@ Betina, Ingrid, Polina, Mona and Henrik's venture into Convolutional Neural Netw
 
 ### Part 1 (MNIST dataset):
 * Betina on SVM (Keras/tensorflow)	
-* Ingrid+? on CNN implementation (forward + backwords)
+* Ingrid+? on CNN implementation (forward + backwards)
 * Henrik on CNN (Keras)
-* Mona on CNN implementation in TensorFlow
+* Mona on CNN implementation using TensorFlow and TensorBoard
 ```
 Choose tasks
 ```
