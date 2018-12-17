@@ -5,6 +5,7 @@ Betina, Ingrid, Polina, Mona and Henrik's venture into Convolutional Neural Netw
 * Betina on SVM (Keras/tensorflow)	
 * Ingrid+? on CNN implementation (forward + backwords)
 * Henrik on CNN (Keras)
+* Mona on CNN implementation in TensorFlow
 ```
 Choose tasks
 ```
