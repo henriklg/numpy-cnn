@@ -3,7 +3,6 @@ from scipy.signal import fftconvolve
 from skimage.measure import block_reduce
 from math import ceil
 from sklearn import datasets
-import numba
 
 """
     Classes for different types of layer for a CNN
@@ -31,7 +30,6 @@ class ConvLayer():
         # Learning rate
         self.eta = eta
 
-    @numba.jit
     def feed_forward(self, images):
         """
         Feed forward for convolution layer
@@ -65,7 +63,6 @@ class ConvLayer():
         a[a <= 0] = 0
         return a
 
-    @numba.jit
     def convolution2D(self, image, filter, bias, stride=1, padding=0):
         '''
         Convolution of 'filter' over 'image' using stride length 'stride'
@@ -117,7 +114,6 @@ class ConvLayer():
         stddev = scale / np.sqrt(np.prod(f_size))
         return np.random.normal(loc=0, scale=stddev, size=f_size)
 
-    @numba.jit
     def back_propagation(self, error):
         """
         Backpropagation in convolution layer
@@ -158,7 +154,6 @@ class MaxPoolLayer():
         self.stride = stride
         self.a_out = None
 
-    @numba.jit
     def feed_forward(self, a_in):
         """
         Max pooling of input a_in
@@ -171,7 +166,6 @@ class MaxPoolLayer():
 
         return self.a_out
 
-    @numba.jit
     def back_propagation(self, d_error):
         """
         Backpropagation on max pool layer
